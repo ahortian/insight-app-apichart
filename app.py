@@ -1,5 +1,6 @@
 
 import os
+from random import randint
 
 import dash
 import dash_core_components as dcc
@@ -24,6 +25,7 @@ import time
 import math
 import random
 
+import flask
 
 
 mapbox_access_token = "pk.eyJ1IjoiYWhvcnRpYW4iLCJhIjoiY2p4MDZ5OG9hMW5wNzQ4bXpubTBsd2V6aSJ9.Jl9LiYDTuE7ywfLTINQHKw"
@@ -101,10 +103,15 @@ def updatemapfolium(df_airbnb, loaded_model, select_name="Sunny Bungalow in the 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-server = app.server
-server.secret_key = os.environ.get("SECRET_KEY", "secret")
+server = flask.Flask(__name__)
+server.secret_key = os.environ.get('secret_key', str(randint(0, 1000000)))
+app = dash.Dash(__name__, server=server, external_stylesheets=external_stylesheets)
+#server.secret_key = os.environ.get("SECRET_KEY", "secret")
 #config.assets.compress = True
+
+#app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+#server = app.server
+
 
 app.layout = html.Div([
 					   html.Div([
@@ -232,4 +239,5 @@ def filter_hotel_by_name(filter_text):
 if __name__ == '__main__':
 	loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
 	#app.run_server(debug=True)
-	app.run_server()
+	#app.run_server()
+	app.server.run(debug=True, threaded=True)
