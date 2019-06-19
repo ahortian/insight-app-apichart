@@ -36,6 +36,11 @@ df_airbnb = pd.read_csv("listings.csv")
 
 hotels = df_airbnb["name"][:20]
 
+theme = {
+	'font-family': 'Raleway',
+		'background-color': '#787878',
+}
+
 def updatemapfolium(df_airbnb, loaded_model, select_name="Sunny Bungalow in the City", select_date="2018-04-01"):
 	df_airbnb_pick = df_airbnb[df_airbnb["name"] == select_name]
 	df_crime_pick = df_crime_valid[df_crime_valid["DATE"] == select_date]
@@ -105,7 +110,8 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 server = flask.Flask(__name__)
 server.secret_key = os.environ.get('secret_key', str(randint(0, 1000000)))
-app = dash.Dash(__name__, server=server, external_stylesheets=external_stylesheets)
+#app = dash.Dash(__name__, server=server, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, server=server,)
 #server.secret_key = os.environ.get("SECRET_KEY", "secret")
 #config.assets.compress = True
 
@@ -175,7 +181,10 @@ app.layout = html.Div([
 					   
 					   html.Div(id='result_filter', style={'textAlign': 'center'}),
 					   
-					   ]) # golbal
+					   ],
+					  className='container',
+					  style={'font-family': theme['font-family']}
+					  ) # golbal
 
 
 @app.callback(
