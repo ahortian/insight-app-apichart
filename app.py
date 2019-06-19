@@ -210,12 +210,26 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 	trace = []
 	
 	trace.append(
-				go.Scattermapbox(lat=[lat_pick], lon=[long_pick], mode='markers', marker=go.scattermapbox.Marker(size=5, color=plot_col))
+				go.Scattermapbox(lat=[lat_pick], lon=[long_pick],
+								 mode='markers',
+								 marker=go.scattermapbox.Marker(
+																size=5,
+																color=plot_col
+																))
 				)
 	trace.append(
-				 go.Scattermapbox(lat=[lat_pick], lon=[long_pick], mode='markers', marker=go.scattermapbox.Marker(size=25, color=plot_col_opac, opacity=0.7), text=hotel_name, hoverinfo='text', name='')
+				 go.Scattermapbox(lat=[lat_pick], lon=[long_pick],
+								  mode='markers',
+								  marker=go.scattermapbox.Marker(
+																 size=25,
+																 color=plot_col_opac,
+																 opacity=0.7
+																 ),
+								  text=hotel_name,
+								  hoverinfo='text',
+								  name='')
 				 )
-	return {"data": trace,
+	return {"data": go.Data(trace),
 		    "layout": go.Layout(autosize=True, hovermode='closest', showlegend=False, height=500,
 							mapbox={'accesstoken': mapbox_access_token, 'bearing': 0,
 							'center': {'lat': 42.321145, 'lon': -71.057083}, 'pitch': 0, 'zoom': 10, "style": 'mapbox://styles/mapbox/light-v9'
