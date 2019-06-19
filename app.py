@@ -229,11 +229,23 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 								  hoverinfo='text',
 								  name='')
 				 )
-	return {"data": go.Data(trace),
-		    "layout": go.Layout(autosize=True, hovermode='closest', showlegend=False, height=500,
-							mapbox={'accesstoken': mapbox_access_token, 'bearing': 0,
-							'center': {'lat': 42.321145, 'lon': -71.057083}, 'pitch': 0, 'zoom': 10, "style": 'mapbox://styles/mapbox/light-v9'
-							})}
+
+	data = go.Data(trace)
+	layout = go.Layout(
+						 autosize=True,
+						 hovermode='closest',
+						 showlegend=False,
+						 height=500,
+						 mapbox={
+						 'accesstoken': mapbox_access_token,
+						 'bearing': 0,
+						 'center': {'lat': 42.321145, 'lon': -71.057083},
+						 'pitch': 0,
+						 'zoom': 10,
+						 "style": 'mapbox://styles/mapbox/light-v9'
+								   })
+	figure = go.Figure(data=data, layout=layout)
+	return figure
 
 
 @app.callback(
@@ -253,5 +265,5 @@ def filter_hotel_by_name(filter_text):
 if __name__ == '__main__':
 	loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
 	#app.run_server(debug=True)
-	#app.run_server()
-	app.server.run(debug=True, threaded=True)
+	app.run_server()
+	#app.server.run(debug=True, threaded=True)
