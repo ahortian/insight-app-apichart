@@ -8,6 +8,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 #import us
+#import plotly
 import plotly.graph_objs as go
 import pickle
 #import folium
@@ -251,7 +252,7 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 						 'center': {'lat': 42.321145, 'lon': -71.057083},
 						 'pitch': 0,
 						 'zoom': 10,
-						 "style": 'mapbox://styles/mapbox/light-v9'
+					   #"style": 'mapbox://styles/mapbox/light-v9'
 								   })
 	figure = go.Figure(data=data, layout=layout)
 	return figure
