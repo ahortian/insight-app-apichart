@@ -33,8 +33,6 @@ import json
 import flask
 
 
-loaded_model = load('grad_bdt_classi_2019_06_19_pipe.joblib')
-
 mapbox_access_token = "pk.eyJ1IjoiYWhvcnRpYW4iLCJhIjoiY2p4MDZ5OG9hMW5wNzQ4bXpubTBsd2V6aSJ9.Jl9LiYDTuE7ywfLTINQHKw"
 
 # dataset needed
@@ -431,6 +429,7 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 
 if __name__ == '__main__':
 	#loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
+	loaded_model = load('grad_bdt_classi_2019_06_19_pipe.joblib')
 	#app.run_server(debug=True)
 	app.run_server()
 	#app.server.run(debug=True, threaded=True)
