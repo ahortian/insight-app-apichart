@@ -430,6 +430,6 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 if __name__ == '__main__':
 	#loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
 	loaded_model = load('grad_bdt_classi_2019_06_19_pipe.joblib')
-	app.run_server(debug=True)
-	#app.run_server()
+	#app.run_server(debug=True)
+	app.run_server()
 	#app.server.run(debug=True, threaded=True)
