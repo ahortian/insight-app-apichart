@@ -11,7 +11,6 @@ from dash.dependencies import Input, Output
 #import plotly
 import plotly.graph_objs as go
 import pickle
-from joblib import load
 #import folium
 #from app import app
 from sklearn import ensemble
@@ -135,35 +134,31 @@ def is_crime_occur(df_airbnb, loaded_model, select_name="Sunny Bungalow in the C
 	w_data = [{'hr_grp': 1, 'temp': 68.78375000000001, 'humid': 79.875, 'wndsp': 5.2212499999999995, 'pcip': 0.009625}, {'hr_grp': 2, 'temp': 75.4225, 'humid': 66.125, 'wndsp': 7.51875, 'pcip': 0.00825}, {'hr_grp': 3, 'temp': 75.185, 'humid': 66.375, 'wndsp': 6.9087499999999995, 'pcip': 0.00875}]
 	#print (w_data[1])
 	
-	a = []
-	for i in [0,1,2]:
-		data = {
-			# ["DAY_OF_MONTH","DAY_OF_WEEK_NUM","MONTH","YEAR","Lat","Long"
-			#,"Temperature(F)","Humidity(%)","Wind Speed(mph)","Precip.(in)"]
-		'Hour_Grp':[i+1],
-		'DAY_OF_MONTH':[day.day],
-		'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
-		'MONTH':[day.month],
-		'YEAR':[day.year],
-		'Lat':[lat],
-		'Long':[long],
-		'Temperature(F)':[w_data[i]['temp']],
-		'Humidity(%)':[w_data[i]['humid']],
-		'Wind Speed(mph)':[w_data[i]['wndsp']],
-		'Precip.(in)':[w_data[i]['pcip']]
-				#	'Temperature(F)':[df_crime_pick['Temperature(F)'].iloc[0]],
-				#	'Humidity(%)':[df_crime_pick['Humidity(%)'].iloc[0]],
-				#	'Wind Speed(mph)':[df_crime_pick['Wind Speed(mph)'].iloc[0]],
-				#	'Precip.(in)':[df_crime_pick['Precip.(in)'].iloc[0]]
-			}
-		# Create DataFrame
-		x_valid = pd.DataFrame(data)
-		#print (x_valid)
-		#predictions = loaded_model.predict(x_valid)
-		predictions = loaded_model["model"].predict(x_valid)
-		#print (predictions)
-		##a = random.uniform(0, 1)
-		a += [predictions[0]]
+	data = {
+		# ["DAY_OF_MONTH","DAY_OF_WEEK_NUM","MONTH","YEAR","Lat","Long"
+		#,"Temperature(F)","Humidity(%)","Wind Speed(mph)","Precip.(in)"]
+	'DAY_OF_MONTH':[day.day],
+	'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
+	'MONTH':[day.month],
+	'YEAR':[day.year],
+	'Lat':[lat],
+	'Long':[long],
+	'Temperature(F)':[w_data[1]['temp']],
+	'Humidity(%)':[w_data[1]['humid']],
+	'Wind Speed(mph)':[w_data[1]['wndsp']],
+	'Precip.(in)':[w_data[1]['pcip']]
+			#	'Temperature(F)':[df_crime_pick['Temperature(F)'].iloc[0]],
+			#	'Humidity(%)':[df_crime_pick['Humidity(%)'].iloc[0]],
+			#	'Wind Speed(mph)':[df_crime_pick['Wind Speed(mph)'].iloc[0]],
+			#	'Precip.(in)':[df_crime_pick['Precip.(in)'].iloc[0]]
+		}
+	# Create DataFrame
+	x_valid = pd.DataFrame(data)
+	#print (x_valid)
+	predictions = loaded_model.predict(x_valid)
+	#print (predictions)
+	##a = random.uniform(0, 1)
+	a = predictions[0]
 	return a, lat, long
 
 #	boston_map_crime = folium.Map(location=[42.321145, -71.057083],
@@ -302,7 +297,7 @@ app.layout = html.Div(
 									  create_dropdown_dist('district-name'),
 									  create_dropdown_hotel('hotel-name'),
 									  create_calendar("check-in-calendar"),
-									  #create_calendar("check-out-calendar"),
+									  create_calendar("check-out-calendar"),
 							 ],className="row",style=dict(display='flex')) ,
 							 # ,style=dict(display='flex') makes the bars aligned
 								
@@ -326,13 +321,11 @@ app.layout = html.Div(
               [# list of dash.dependencies Input
                Input('hotel-name', 'value'),
                Input('check-in-calendar', 'date'),
-			   #Input('check-out-calendar', 'date')
+			   Input('check-out-calendar', 'date')
                ]
               )
-def update_hotelname(hotel_name, in_datepick):
-	return 'You selected "{}"'.format(hotel_name + ". Check-in date is " +in_datepick)
-#def update_hotelname(hotel_name, in_datepick, out_datepick): # the first parameter is the first dash.dependencies Input, and so on
-#return 'You selected "{}"'.format(hotel_name + ". Check-in date is " +in_datepick + ". Checkout date is " +out_datepick)
+def update_hotelname(hotel_name, in_datepick, out_datepick): # the first parameter is the first dash.dependencies Input, and so on
+    return 'You selected "{}"'.format(hotel_name + ". Check-in date is " +in_datepick + ". Checkout date is " +out_datepick)
 
 
 @app.callback(
@@ -360,11 +353,7 @@ def update_hotel_dropdown(dist_name): # the first parameter is the first dash.de
               )
 def update_map(hotel_name, datepick): # the first parameter is the first dash.dependencies Input, and so on
 	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, hotel_name, datepick)
-	display_txt =  "[12AM- 8AM  is " + str(a[0]) + "]\n"
-	display_txt += "[8AM - 4PM  is " + str(a[1]) + "]\n"
-	display_txt += "[4PM - 12AM is " + str(a[2]) + "]\n"
-	display_txt = hotel_name + '\n' + display_txt
-	if a[0] > 0.5 or a[1] > 0.5 or a[2] > 0.5:
+	if a > 0.5:
 		plot_col = "rgb(255, 0, 0)"
 		plot_col_opac = "rgb(242, 177, 172)"
 	else:
@@ -388,7 +377,7 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 																 color=plot_col_opac,
 																 opacity=0.7
 																 ),
-								  text=display_txt,
+								  text=hotel_name,
 								  hoverinfo='text',
 								  name='')
 				 )
@@ -428,8 +417,7 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 
 
 if __name__ == '__main__':
-	#loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
-	loaded_model = load('grad_bdt_classi_2019_06_19_pipe.joblib')
+	loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
 	app.run_server(debug=True)
 	#app.run_server()
 	#app.server.run(debug=True, threaded=True)
