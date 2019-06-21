@@ -193,7 +193,9 @@ def is_crime_occur(df_airbnb, loaded_model, select_name="Sunny Bungalow in the C
 
 def create_header():
 	header = html.Div([
-			  html.H1(children='Welcome to StaySafe', style={'textAlign': 'center'})
+			  html.H1(children='Welcome to StaySafe', style={'textAlign': 'center'}),
+			  html.P(children='Pick a hotel and a date and see if a crime will occur ! ', style={'textAlign': 'center'})
+			  
 			  ])
 	return header
 
@@ -254,10 +256,10 @@ def create_calendar(id_name):
 	return calendar
 
 
-def create_content():
+def create_content(id_name):
 	# create empty figure. It will be updated when _update_graph is triggered
-	graph = dcc.Graph(id='my-graph')
-	content = html.Div(graph, id='content')
+	graph = dcc.Graph(id=id_name)
+	content = html.Div(graph, id='content', className='eight columns' )
 	return content
 
 
@@ -300,27 +302,66 @@ app.layout = html.Div(
 					  children=[
 								
 							create_header(),
+							
 							html.Div([
 									  create_dropdown_dist('district-name'),
 									  create_dropdown_hotel('hotel-name'),
 									  create_calendar("check-in-calendar"),
 									  #create_calendar("check-out-calendar"),
-							 ],className="row",style=dict(display='flex')) ,
+							 ],className='row',style=dict(display='flex')) ,
 							 # ,style=dict(display='flex') makes the bars aligned
 								
-							 html.Div(id='result-selected', style={'textAlign': 'center'}, className='row'),
+							html.Div(id='result-selected', style={'textAlign': 'center'}, className='row'),
 
-							 #html.Iframe(id='map', srcDoc = open('plot_data_BOS_update.html','r').read(), width='60%', height='400')
-							html.Div(create_content(), className='row'),
-								
-								#creat_searchbar('hotel-text-filter'),
-								#html.Div(id='result_filter', style={'textAlign': 'center'}),
+							html.Div([
+									  html.Div(create_content('my-graph')),
+									  
+									  
+									  html.Div( id='pred_result', children= [
+												
+												]),
+									  # style={'vertical-align': 'middle'}
+									  
+								], className='row')
 								
 					   ]
 					  ,
 					  className='ten columns offset-by-one',
 					  #style={'font-family': theme['font-family']}
 					  ) # golbal
+
+
+
+## update text
+@app.callback(
+			  Output('pred_result', 'children'),
+			  [# list of dash.dependencies Input
+			   Input('hotel-name', 'value'),
+			   Input('check-in-calendar', 'date'),
+			   #Input('check-out-calendar', 'date')
+			   ]
+			  )
+def update_prediction(hotel_name, in_datepick):
+	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, hotel_name, in_datepick)
+	val_predict = 'NO CRIME'
+	if a[0] > 0.5:
+		val_predict = 'THERE IS CRIME !'
+	val_predict1 = 'NO CRIME'
+	if a[1] > 0.5:
+		val_predict1 = 'THERE IS CRIME !'
+	val_predict2 = 'NO CRIME'
+	if a[2] > 0.5:
+		val_predict2 = 'THERE IS CRIME !'
+	
+	a = html.Div([
+				  html.Label('Will crimes occur?', className='three columns'),
+				  dcc.Input(id= 'pred1', value= '[12AM -  8AM]  ' + val_predict, type='text', className='four columns'),
+				  dcc.Input(id= 'pred2', value= '[ 8AM -  4PM]  ' + val_predict1, type='text', className='four columns'),
+				  dcc.Input(id= 'pred3', value= '[ 4PM - 12AM]  '  + val_predict2, type='text', className='four columns'),
+				  ])
+	return a
+
+
 
 ## update text
 @app.callback(
@@ -404,9 +445,9 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 						 mapbox={
 						 'accesstoken': mapbox_access_token,
 						 'bearing': 0,
-						 'center': {'lat': 42.321145, 'lon': -71.057083},
+						 'center': {'lat': lat_pick, 'lon': long_pick},
 						 'pitch': 0,
-						 'zoom': 10,
+						 'zoom': 13,
 					     "style": 'mapbox://styles/mapbox/light-v9'
 								   })
 
@@ -432,5 +473,5 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 if __name__ == '__main__':
 	#loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
 	#app.run_server(debug=True)
-	app.run_server()
+	app.run_server(debug=True)
 	#app.server.run(debug=True, threaded=True)
