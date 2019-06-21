@@ -12,7 +12,7 @@ from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 import pickle
 from joblib import load
-#import folium
+import folium
 #from app import app
 from sklearn import ensemble
 
@@ -120,13 +120,14 @@ def get_weather_info(date_request):
 	return output
 
 
-def is_crime_occur(df_airbnb, loaded_model, select_name="Sunny Bungalow in the City", select_date="2019-07-20"):
+def updatemapfolium(df_airbnb, loaded_model, select_name="Sunny Bungalow in the City", select_date="2019-07-20"):
 	df_airbnb_pick = df_airbnb[df_airbnb["name"] == select_name]
 	#df_crime_pick = df_crime_valid[df_crime_valid["DATE"] == select_date]
 	#print (df_crime_pick.iloc[0])
 	lat = df_airbnb_pick['latitude'].iloc[0]
 	long = df_airbnb_pick['longitude'].iloc[0]
 	day = datetime.datetime.strptime(select_date,'%Y-%m-%d')
+	
 
 	# real weather data  from API
 	#w_data = get_weather_info(select_date)
@@ -137,6 +138,7 @@ def is_crime_occur(df_airbnb, loaded_model, select_name="Sunny Bungalow in the C
 	
 	a = []
 	for i in [0,1,2]:
+		
 		data = {
 			# ["DAY_OF_MONTH","DAY_OF_WEEK_NUM","MONTH","YEAR","Lat","Long"
 			#,"Temperature(F)","Humidity(%)","Wind Speed(mph)","Precip.(in)"]
@@ -157,34 +159,50 @@ def is_crime_occur(df_airbnb, loaded_model, select_name="Sunny Bungalow in the C
 				#	'Precip.(in)':[df_crime_pick['Precip.(in)'].iloc[0]]
 			}
 		# Create DataFrame
+		
 		x_valid = pd.DataFrame(data)
+		##print (x_valid)
+		##predictions = loaded_model.predict(x_valid)
 		#print (x_valid)
-		#predictions = loaded_model.predict(x_valid)
 		predictions = loaded_model["model"].predict(x_valid)
-		#print (predictions)
-		##a = random.uniform(0, 1)
+		##print (predictions)
+		#a += [random.uniform(0, 1)]
 		a += [predictions[0]]
-	return a, lat, long
 
-#	boston_map_crime = folium.Map(location=[42.321145, -71.057083],
-#								  zoom_start=11
-#		     ,tiles="CartoDB dark_matter"
-#								  )
-#	radius = 5
-#	if (a>0.5):
-#		color = "#FF4500"
-#	else:
-#		color = "#7cfc00"
-#	#color = "#FF4500"
+
+	boston_map_crime = folium.Map(location=[42.321145, -71.057083],
+										  zoom_start=11
+										  ,tiles="CartoDB dark_matter"
+										  )
+	radius = 10
+	if a[0] > 0.5 or a[1] > 0.5 or a[2] > 0.5:
+		color = "#FF4500"
+	else:
+		color = "#7cfc00"
+	#color = "#FF4500"
+	popup_text = """Name : {}<br>
+		[Results 12AM- 8AM  is : {}<br>]
+		[Results 8AM -16AM  is: {}<br>]
+		[Results 16AM -0AM : {}<br>]
+		"""
+	popup_text = popup_text.format(
+								   str(str(df_airbnb_pick["name"].iloc[0])),
+								   a[0],
+								   a[1],
+								   a[2]
+								   )
 #	popup_text = """Latitude : {}<br>
-#		Longitude : {}<br>
-#		Name : {}<br>"""
+#	Longitude : {}<br>
+#	Name : {}<br>"""
 #	popup_text = popup_text.format(lat,
-#								   long,
-#								   str(str(df_airbnb_pick["name"].iloc[0]))
-#								   )
-#	folium.CircleMarker(location = [lat, long], popup= popup_text,radius = radius, color = color, fill = True).add_to(boston_map_crime)
-#	boston_map_crime.save('plot_data_BOS_update.html')
+#									   long,
+#									   str(str(df_airbnb_pick["name"].iloc[0]))
+#									   )
+	folium.CircleMarker(location = [lat, long], popup= popup_text,radius = radius, color = color, fill = True).add_to(boston_map_crime)
+	boston_map_crime.save('plot_data_BOS_update.html')
+
+	#return a, lat, long
+
 
 ###----------------------------------------------------###
 ###----------------------------------------------------###
@@ -252,11 +270,11 @@ def create_calendar(id_name):
 	return calendar
 
 
-def create_content():
-	# create empty figure. It will be updated when _update_graph is triggered
-	graph = dcc.Graph(id='my-graph')
-	content = html.Div(graph, id='content')
-	return content
+#def create_content():
+#	# create empty figure. It will be updated when _update_graph is triggered
+#	graph = dcc.Graph(id='my-graph')
+#	content = html.Div(graph, id='content')
+#	return content
 
 
 def creat_searchbar(id_name):
@@ -308,8 +326,9 @@ app.layout = html.Div(
 								
 							 html.Div(id='result-selected', style={'textAlign': 'center'}, className='row'),
 
-							 #html.Iframe(id='map', srcDoc = open('plot_data_BOS_update.html','r').read(), width='60%', height='400')
-							html.Div(create_content(), className='row'),
+							 html.Iframe(id='map', srcDoc = open('plot_data_BOS_update.html','r').read(), width='85%', height='500')
+								
+								#html.Div(create_content(), className='row'),
 								
 								#creat_searchbar('hotel-text-filter'),
 								#html.Div(id='result_filter', style={'textAlign': 'center'}),
@@ -346,71 +365,85 @@ def update_hotel_dropdown(dist_name): # the first parameter is the first dash.de
 	return [{'label': i, 'value': i} for i in hotels]
 
 
-
-
-## update map
 @app.callback(
-              Output("my-graph", "figure"),
-              [# list of dash.dependencies Input
+			  Output('map', 'srcDoc'),
+			  [# list of dash.dependencies Input
 			   Input('hotel-name', 'value'),
 			   #Input('latitude', 'value'),
 			   #Input('longitude', 'value'),
-               Input('check-in-calendar', 'date')
-               ]
-              )
+			   Input('check-in-calendar', 'date')
+			   ]
+			  )
 def update_map(hotel_name, datepick): # the first parameter is the first dash.dependencies Input, and so on
-	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, hotel_name, datepick)
-	display_txt =  "[12AM- 8AM  is " + str(a[0]) + "]\n"
-	display_txt += "[8AM - 4PM  is " + str(a[1]) + "]\n"
-	display_txt += "[4PM - 12AM is " + str(a[2]) + "]\n"
-	display_txt = hotel_name + '\n' + display_txt
-	if a[0] > 0.5 or a[1] > 0.5 or a[2] > 0.5:
-		plot_col = "rgb(255, 0, 0)"
-		plot_col_opac = "rgb(242, 177, 172)"
-	else:
-		plot_col = "rgb(0, 255, 0)"
-		plot_col_opac = "rgb(172, 242, 172)"
-	trace = []
-	
-	trace.append(
-				go.Scattermapbox(lat=[lat_pick], lon=[long_pick],
-								 mode='markers',
-								 marker=go.scattermapbox.Marker(
-																size=5,
-																color=plot_col
-																))
-				)
-	trace.append(
-				 go.Scattermapbox(lat=[lat_pick], lon=[long_pick],
-								  mode='markers',
-								  marker=go.scattermapbox.Marker(
-																 size=25,
-																 color=plot_col_opac,
-																 opacity=0.7
-																 ),
-								  text=display_txt,
-								  hoverinfo='text',
-								  name='')
-				 )
+	updatemapfolium(df_airbnb, loaded_model, hotel_name, datepick)
+	return open('plot_data_BOS_update.html','r').read()
 
-	layout = go.Layout(
-						 autosize=True,
-						 hovermode='closest',
-						 showlegend=False,
-						 height=400,
-					     margin=go.layout.Margin(l=0, r=0, t=20, b=30),
-						 mapbox={
-						 'accesstoken': mapbox_access_token,
-						 'bearing': 0,
-						 'center': {'lat': 42.321145, 'lon': -71.057083},
-						 'pitch': 0,
-						 'zoom': 10,
-					     "style": 'mapbox://styles/mapbox/light-v9'
-								   })
 
-	dict_return = {"data":trace, "layout":layout}
 
-	return dict_return
+
+### update map
+#@app.callback(
+#              Output("my-graph", "figure"),
+#              [# list of dash.dependencies Input
+#			   Input('hotel-name', 'value'),
+#			   #Input('latitude', 'value'),
+#			   #Input('longitude', 'value'),
+#               Input('check-in-calendar', 'date')
+#               ]
+#              )
+#def update_map(hotel_name, datepick): # the first parameter is the first dash.dependencies Input, and so on
+#	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, hotel_name, datepick)
+#	display_txt =  "[12AM- 8AM  is " + str(a[0]) + "]\n"
+#	display_txt += "[8AM - 4PM  is " + str(a[1]) + "]\n"
+#	display_txt += "[4PM - 12AM is " + str(a[2]) + "]\n"
+#	display_txt = hotel_name + '\n' + display_txt
+#	if a[0] > 0.5 or a[1] > 0.5 or a[2] > 0.5:
+#		plot_col = "rgb(255, 0, 0)"
+#		plot_col_opac = "rgb(242, 177, 172)"
+#	else:
+#		plot_col = "rgb(0, 255, 0)"
+#		plot_col_opac = "rgb(172, 242, 172)"
+#	trace = []
+#
+#	trace.append(
+#				go.Scattermapbox(lat=[lat_pick], lon=[long_pick],
+#								 mode='markers',
+#								 marker=go.scattermapbox.Marker(
+#																size=5,
+#																color=plot_col
+#																))
+#				)
+#	trace.append(
+#				 go.Scattermapbox(lat=[lat_pick], lon=[long_pick],
+#								  mode='markers',
+#								  marker=go.scattermapbox.Marker(
+#																 size=25,
+#																 color=plot_col_opac,
+#																 opacity=0.7
+#																 ),
+#								  text=display_txt,
+#								  hoverinfo='text',
+#								  name='')
+#				 )
+#
+#	layout = go.Layout(
+#						 autosize=True,
+#						 hovermode='closest',
+#						 showlegend=False,
+#						 height=400,
+#					     margin=go.layout.Margin(l=0, r=0, t=20, b=30),
+#						 mapbox={
+#						 'accesstoken': mapbox_access_token,
+#						 'bearing': 0,
+#						 'center': {'lat': 42.321145, 'lon': -71.057083},
+#						 'pitch': 0,
+#						 'zoom': 10,
+#					     "style": 'mapbox://styles/mapbox/light-v9'
+#								   })
+#
+#	dict_return = {"data":trace, "layout":layout}
+#
+#	return dict_return
 
 
 #@app.callback(
@@ -430,6 +463,6 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 if __name__ == '__main__':
 	#loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
 	loaded_model = load('grad_bdt_classi_2019_06_19_pipe.joblib')
-	#app.run_server(debug=True)
-	app.run_server()
+	app.run_server(debug=True)
+	#app.run_server()
 	#app.server.run(debug=True, threaded=True)
