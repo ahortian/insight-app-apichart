@@ -178,11 +178,11 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 
 
 	# real weather data  from API
-	#w_data = get_weather_info(select_date)
+	w_data = get_weather_info(select_date)
 	#print (w_data)
 	
 	# const weather data for testing
-	w_data = [{'hr_grp': 1, 'temp': 68.78375000000001, 'humid': 79.875, 'wndsp': 5.2212499999999995, 'pcip': 0.009625}, {'hr_grp': 2, 'temp': 75.4225, 'humid': 66.125, 'wndsp': 7.51875, 'pcip': 0.00825}, {'hr_grp': 3, 'temp': 75.185, 'humid': 66.375, 'wndsp': 6.9087499999999995, 'pcip': 0.00875}]
+	#w_data = [{'hr_grp': 1, 'temp': 68.78375000000001, 'humid': 79.875, 'wndsp': 5.2212499999999995, 'pcip': 0.009625}, {'hr_grp': 2, 'temp': 75.4225, 'humid': 66.125, 'wndsp': 7.51875, 'pcip': 0.00825}, {'hr_grp': 3, 'temp': 75.185, 'humid': 66.375, 'wndsp': 6.9087499999999995, 'pcip': 0.00875}]
 	#print (w_data[1])
 	
 	a = []
@@ -226,7 +226,7 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 			}
 		# Create DataFrame
 		x_valid = pd.DataFrame(data)
-		print (x_valid)
+		#print (x_valid)
 		#predictions = loaded_model.predict(x_valid)
 		predictions = loaded_model["model"].predict(x_valid)
 		#print (predictions)
