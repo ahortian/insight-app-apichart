@@ -32,19 +32,14 @@ import json
 
 import flask
 
+
+loaded_model = load('grad_bdt_classi_tuned_2019_06_25_pipe.joblib')
+
 mapbox_access_token = "pk.eyJ1IjoiYWhvcnRpYW4iLCJhIjoiY2p4MDZ5OG9hMW5wNzQ4bXpubTBsd2V6aSJ9.Jl9LiYDTuE7ywfLTINQHKw"
-
-#loaded_model = load('grad_bdt_classi_tuned_2019_06_25_pipe.joblib')
-loaded_model = load('grad_bdt_classi_police_mbta_2019_06_28_F1p559_pipe.joblib')
-
-
 
 # dataset needed
 #df_crime_valid = pd.read_csv("fullTrainTestCrimeData_validate_v1_weather_by_day.csv")
 df_airbnb = pd.read_csv("listings.csv")
-df_policeStat = pd.read_csv("Boston_Police_Stations.csv")
-df_mbta = pd.read_csv("MBTA_Rapid_Transit_Stops.csv")
-
 
 hotels = df_airbnb["name"][:20]
 #address = df_airbnb["name"][:20]
@@ -57,9 +52,8 @@ districts = {"Downtown", "Charlestown", "East Boston", "Roxbury",
 #				 , 'Jamaica Plain', 'Hyde Park']
 
 neighbourhoods = ['Downtown', 'Chinatown', 'East Boston', 'Roxbury',
-				  'Mattapan', 'South Boston', 'Dorchester', 'West Roxbury'
+				  'Mattapan', 'South Boston', 'Dorchester', 'South End', 'West Roxbury'
 				  , 'Jamaica Plain', 'Hyde Park','Brighton','Charlestown']
-# 'South End' not working why?
 
 
 #neighbourhoods_notsure = ['Roslindale',  'Mission Hill', 'Fenway/Kenmore',
@@ -97,20 +91,6 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 ###----------------------------------------------------###
 ###----------------------------------------------------###
-def get_shortest_dist_police(lat, lng, df_policeStat):
-	min_dist = 1000
-	for p in range(df_policeStat.shape[0]):
-		pol_lng = df_policeStat["X"].iloc[p]
-		pol_lad = df_policeStat["Y"].iloc[p]
-		
-		y_dist = abs(pol_lad-lat) *(111/1.60934)
-		x_dist = abs(pol_lng-lng) *(111/1.60934)
-		dist = math.sqrt((y_dist**2) + (x_dist**2))
-		if dist < min_dist:
-			min_dist = dist
-	return min_dist
-
-
 def get_weather_info(date_request):
 	darksky_apikey = 'b4510e4f9d75ac1e308efd5fdbd97a21'
 	url_txt = 'https://api.darksky.net/forecast/'
@@ -165,21 +145,16 @@ def get_weather_info(date_request):
 	return output
 
 
-def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name="One Bedroom Studio Garden Apartment", select_date="2019-07-20"):
+def is_crime_occur(df_airbnb, loaded_model, select_name="One Bedroom Studio Garden Apartment", select_date="2019-07-20"):
 	df_airbnb_pick = df_airbnb[df_airbnb["name"] == select_name]
 	#df_crime_pick = df_crime_valid[df_crime_valid["DATE"] == select_date]
 	#print (df_crime_pick.iloc[0])
 	lat = df_airbnb_pick['latitude'].iloc[0]
 	long = df_airbnb_pick['longitude'].iloc[0]
 	day = datetime.datetime.strptime(select_date,'%Y-%m-%d')
-	
-	dist_closest_police = get_shortest_dist_police(lat, long, df_policeStat)
-	dist_closest_mbta = get_shortest_dist_police(lat, long, df_mbta)
-
 
 	# real weather data  from API
 	#w_data = get_weather_info(select_date)
-	#print (w_data)
 	
 	# const weather data for testing
 	w_data = [{'hr_grp': 1, 'temp': 68.78375000000001, 'humid': 79.875, 'wndsp': 5.2212499999999995, 'pcip': 0.009625}, {'hr_grp': 2, 'temp': 75.4225, 'humid': 66.125, 'wndsp': 7.51875, 'pcip': 0.00825}, {'hr_grp': 3, 'temp': 75.185, 'humid': 66.375, 'wndsp': 6.9087499999999995, 'pcip': 0.00875}]
@@ -190,35 +165,17 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 		data = {
 			# ["DAY_OF_MONTH","DAY_OF_WEEK_NUM","MONTH","YEAR","Lat","Long"
 			#,"Temperature(F)","Humidity(%)","Wind Speed(mph)","Precip.(in)"]
-#		'Hour_Grp':[i+1],
-#		'DAY_OF_MONTH':[day.day],
-#		'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
-#		'MONTH':[day.month],
-#		'YEAR':[day.year],
-#		'Lat':[lat],
-#		'Long':[long],
-#		'Temperature(F)':[w_data[i]['temp']],
-#		'Humidity(%)':[w_data[i]['humid']],
-#		'Wind Speed(mph)':[w_data[i]['wndsp']],
-#		'Precip.(in)':[w_data[i]['pcip']]
-
-			#objects = ("Latitude","Longitude","Temperature(F)","Humidity(%)","Wind Speed(mph)","Precipitation(in)",
-			#		   "distance to closest police st","distance to closest MBTA st","Hour Group","Day of Month","Day of Week","Month")
-
+		'Hour_Grp':[i+1],
+		'DAY_OF_MONTH':[day.day],
+		'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
+		'MONTH':[day.month],
+		'YEAR':[day.year],
 		'Lat':[lat],
 		'Long':[long],
 		'Temperature(F)':[w_data[i]['temp']],
 		'Humidity(%)':[w_data[i]['humid']],
 		'Wind Speed(mph)':[w_data[i]['wndsp']],
-		'Precip.(in)':[w_data[i]['pcip']],
-		'closest_police_d': [dist_closest_police],
-		'closest_mbta_d': [dist_closest_mbta],
-		'Hour_Grp':[i+1],
-		'DAY_OF_MONTH':[day.day],
-		'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
-		'MONTH':[day.month],
-
-
+		'Precip.(in)':[w_data[i]['pcip']]
 				#	'Temperature(F)':[df_crime_pick['Temperature(F)'].iloc[0]],
 				#	'Humidity(%)':[df_crime_pick['Humidity(%)'].iloc[0]],
 				#	'Wind Speed(mph)':[df_crime_pick['Wind Speed(mph)'].iloc[0]],
@@ -226,7 +183,7 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 			}
 		# Create DataFrame
 		x_valid = pd.DataFrame(data)
-		print (x_valid)
+		#print (x_valid)
 		#predictions = loaded_model.predict(x_valid)
 		predictions = loaded_model["model"].predict(x_valid)
 		#print (predictions)
@@ -259,7 +216,7 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 
 def create_header():
 	header = html.Div([
-			  html.H1(children='Welcome to SafeGetaway', style={'textAlign': 'center'}),
+			  html.H1(children='Welcome to StaySafe', style={'textAlign': 'center'}),
 			  html.P(children='Pick an Airbnb and a date. See if a crime will occur ! ', style={'textAlign': 'center'})
 			  
 			  ])
@@ -408,7 +365,7 @@ app.layout = html.Div(
 			   ]
 			  )
 def update_prediction(hotel_name, in_datepick):
-	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, hotel_name, in_datepick)
+	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, hotel_name, in_datepick)
 	val_predict = 'There will be NO CRIME'
 	if a[0] > 0.5:
 		val_predict = 'High chance to have CRIME !'
@@ -468,7 +425,7 @@ def update_hotel_dropdown(dist_name): # the first parameter is the first dash.de
                ]
               )
 def update_map(hotel_name, datepick): # the first parameter is the first dash.dependencies Input, and so on
-	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, hotel_name, datepick)
+	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, hotel_name, datepick)
 	display_txt =  "[12AM- 8AM  is " + str(a[0]) + "]\n"
 	display_txt += "[8AM - 4PM  is " + str(a[1]) + "]\n"
 	display_txt += "[4PM - 12AM is " + str(a[2]) + "]\n"
