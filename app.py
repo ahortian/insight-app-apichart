@@ -32,10 +32,14 @@ import json
 
 import flask
 
+
+do_debug = "apicharthortiangtham" in os.getcwd()
+
 mapbox_access_token = "pk.eyJ1IjoiYWhvcnRpYW4iLCJhIjoiY2p4MDZ5OG9hMW5wNzQ4bXpubTBsd2V6aSJ9.Jl9LiYDTuE7ywfLTINQHKw"
 
 #loaded_model = load('grad_bdt_classi_tuned_2019_06_25_pipe.joblib')
-loaded_model = load('grad_bdt_classi_police_mbta_2019_06_28_F1p559_pipe.joblib')
+#loaded_model = load('grad_bdt_classi_police_mbta_2019_06_28_F1p559_pipe.joblib')
+loaded_model = load('grad_bdt_classi_undersampling_2019_06_28_F1p583_pipe.joblib')
 
 
 
@@ -92,7 +96,11 @@ theme = {
 	'font-family': 'Raleway',
 	'background-color': '#787878',
 }
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css',
+						##'https://code.jquery.com/jquery-3.2.1.min.js'
+						]
+## you can add custom style as .css file in the directory assets
+## I added mystyle.css to fix the datepicker display
 
 
 ###----------------------------------------------------###
@@ -201,10 +209,11 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 #		'Humidity(%)':[w_data[i]['humid']],
 #		'Wind Speed(mph)':[w_data[i]['wndsp']],
 #		'Precip.(in)':[w_data[i]['pcip']]
-
-			#objects = ("Latitude","Longitude","Temperature(F)","Humidity(%)","Wind Speed(mph)","Precipitation(in)",
-			#		   "distance to closest police st","distance to closest MBTA st","Hour Group","Day of Month","Day of Week","Month")
-
+			
+		'Hour_Grp':[i+1],
+		'DAY_OF_MONTH':[day.day],
+		'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
+		'MONTH':[day.month],
 		'Lat':[lat],
 		'Long':[long],
 		'Temperature(F)':[w_data[i]['temp']],
@@ -213,12 +222,7 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 		'Precip.(in)':[w_data[i]['pcip']],
 		'closest_police_d': [dist_closest_police],
 		'closest_mbta_d': [dist_closest_mbta],
-		'Hour_Grp':[i+1],
-		'DAY_OF_MONTH':[day.day],
-		'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
-		'MONTH':[day.month],
-
-
+		
 				#	'Temperature(F)':[df_crime_pick['Temperature(F)'].iloc[0]],
 				#	'Humidity(%)':[df_crime_pick['Humidity(%)'].iloc[0]],
 				#	'Wind Speed(mph)':[df_crime_pick['Wind Speed(mph)'].iloc[0]],
@@ -307,7 +311,8 @@ def create_calendar(id_name):
 		label = 'Checkout'
 	calendar = html.Div([
 						 
-			  html.Div(children=label, id=label, style={'textAlign': 'center'}),
+			  html.Div(children=label, id=label),
+						 
 			  dcc.DatePickerSingle(
 								   id=id_name,
 								   min_date_allowed=datetime.datetime.today(),
@@ -316,7 +321,7 @@ def create_calendar(id_name):
 								   date=str(datetime.datetime.today().date())
 								   ),
 						 
-						 ], className='two columns',
+						 ], className='four columns',
 						#style={'display': 'inline-block'}
 						)
 	return calendar
@@ -359,6 +364,7 @@ server.secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
 #app = dash.Dash(__name__, server=server,)
 #app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app = dash.Dash(name=app_name, server=server, external_stylesheets=external_stylesheets)
+#app = dash.Dash(name=app_name, server=server)
 
 #config.assets.compress = True
 #server = app.server
@@ -377,6 +383,7 @@ app.layout = html.Div(
 							 ],className='row',style=dict(display='flex')) ,
 							 # ,style=dict(display='flex') makes the bars aligned
 								
+							html.Div(id='line-space1', style={'padding': 12}),
 							html.Div(id='result-selected', style={'textAlign': 'center'}, className='row'),
 
 							html.Div([
@@ -408,6 +415,11 @@ app.layout = html.Div(
 			   ]
 			  )
 def update_prediction(hotel_name, in_datepick):
+	try:
+		hotel_name + ""
+	except TypeError:
+		return html.Div([])
+	
 	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, hotel_name, in_datepick)
 	val_predict = 'There will be NO CRIME'
 	if a[0] > 0.5:
@@ -420,10 +432,11 @@ def update_prediction(hotel_name, in_datepick):
 		val_predict2 = 'High chance to have CRIME !'
 	
 	a = html.Div([
-				  html.Label(' ', className='three columns'),
-				  dcc.Input(id= 'pred1', value= '[12AM -  8AM]  ' + val_predict, type='text', className='four columns'),
-				  dcc.Input(id= 'pred2', value= '[ 8AM -  4PM]  ' + val_predict1, type='text', className='four columns'),
-				  dcc.Input(id= 'pred3', value= '[ 4PM - 12AM]  '  + val_predict2, type='text', className='four columns'),
+				  html.Label(' \n', className='three columns'),
+				  html.Div( id= 'line-space2', style={'padding': 12}),
+				  dcc.Input(id= 'pred1', value= '[12AM -8AM]  ' + val_predict, type='text', className='four columns'),
+				  dcc.Input(id= 'pred2', value= '[ 8AM -4PM]  ' + val_predict1, type='text', className='four columns'),
+				  dcc.Input(id= 'pred3', value= '[ 4PM-12AM]  '  + val_predict2, type='text', className='four columns'),
 				  ])
 	return a
 
@@ -439,7 +452,11 @@ def update_prediction(hotel_name, in_datepick):
                ]
               )
 def update_hotelname(hotel_name, in_datepick):
-	return 'You selected "{}"'.format(hotel_name + ". Check-in date is " +in_datepick)
+	try:
+		hotel_name + ""
+	except TypeError:
+		return 'You selected "{}".'.format(". Check-in date is " +in_datepick)
+	return 'You selected "{}".'.format(hotel_name + ". Check-in date is " +in_datepick)
 #def update_hotelname(hotel_name, in_datepick, out_datepick): # the first parameter is the first dash.dependencies Input, and so on
 #return 'You selected "{}"'.format(hotel_name + ". Check-in date is " +in_datepick + ". Checkout date is " +out_datepick)
 
@@ -468,11 +485,17 @@ def update_hotel_dropdown(dist_name): # the first parameter is the first dash.de
                ]
               )
 def update_map(hotel_name, datepick): # the first parameter is the first dash.dependencies Input, and so on
+	try:
+		hotel_name + ""
+	except TypeError:
+		trace = []
+		return {"data":trace, "layout":go.Layout()}
+
 	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, hotel_name, datepick)
-	display_txt =  "[12AM- 8AM  is " + str(a[0]) + "]\n"
-	display_txt += "[8AM - 4PM  is " + str(a[1]) + "]\n"
-	display_txt += "[4PM - 12AM is " + str(a[2]) + "]\n"
-	display_txt = hotel_name + '\n' + display_txt
+	#display_txt =  "[12AM- 8AM  is " + str(a[0]) + "]\n"
+	#display_txt += "[8AM - 4PM  is " + str(a[1]) + "]\n"
+	#display_txt += "[4PM - 12AM is " + str(a[2]) + "]\n"
+	display_txt = hotel_name #+ '\n' + display_txt
 	if a[0] > 0.5 or a[1] > 0.5 or a[2] > 0.5:
 		plot_col = "rgb(255, 0, 0)"
 		plot_col_opac = "rgb(242, 177, 172)"
@@ -493,7 +516,7 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 				 go.Scattermapbox(lat=[lat_pick], lon=[long_pick],
 								  mode='markers',
 								  marker=go.scattermapbox.Marker(
-																 size=25,
+																 size=30,
 																 color=plot_col_opac,
 																 opacity=0.7
 																 ),
@@ -506,19 +529,18 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 						 autosize=True,
 						 hovermode='closest',
 						 showlegend=False,
-						 height=400,
+						 height=450,
 					     margin=go.layout.Margin(l=0, r=0, t=25, b=30),
 						 mapbox={
 						 'accesstoken': mapbox_access_token,
 						 'bearing': 0,
 						 'center': {'lat': lat_pick, 'lon': long_pick},
 						 'pitch': 0,
-						 'zoom': 13,
+						 'zoom': 12,
 					     "style": 'mapbox://styles/mapbox/light-v9'
 								   })
 
 	dict_return = {"data":trace, "layout":layout}
-
 	return dict_return
 
 
@@ -539,5 +561,5 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 if __name__ == '__main__':
 	#loaded_model = pickle.load(open("grad_bdt_classi_2019_06_14.sav", 'rb'))
 	#app.run_server(debug=True)
-	app.run_server(debug=True)
+	app.run_server(debug=do_debug)
 	#app.server.run(debug=True, threaded=True)
