@@ -238,6 +238,7 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 		a += [predictions[0]]
 	return a, lat, long
 
+
 #	boston_map_crime = folium.Map(location=[42.321145, -71.057083],
 #								  zoom_start=11
 #		     ,tiles="CartoDB dark_matter"
@@ -263,23 +264,24 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 
 def create_header():
 	header = html.Div([
-			  html.H1(children='Welcome to SafeGetaway', style={'textAlign': 'center'}),
+					   html.Div([
+								html.H1(children='Welcome to SafeGetaway', style={'textAlign': 'center'}),
+								 #html.H6(children='Helping your vacation stay crime-free', style={'textAlign': 'center'}),
+								 ]#, style={'backgroundColor':'#7fffe3'}
+								),
 			  html.P(children='Pick an Airbnb and a date. See if a crime will occur ! ', style={'textAlign': 'center'})
-			  
 			  ])
 	return header
 
 
 def create_dropdown_dist(id_name):
 	dropdown = html.Div([
-						 
 						 html.Div(children='Choose Neighbourhood', id='top-of-dropdown-dist'),
 						 dcc.Dropdown(
 									  id=id_name,
 									  options=[{'label': i, 'value': i} for i in neighbourhoods],
 									  value='Jamaica Plain'
 									  ),
-						 
 						 ], className= 'three columns',
 						#style={'display': 'inline-block'}
 						 )
@@ -288,16 +290,13 @@ def create_dropdown_dist(id_name):
 
 
 def create_dropdown_hotel(id_name):
-	
 	dropdown = html.Div([
-			  
 			  html.Div(children='Choose Airbnb', id='top-of-dropdown-hotel'),
 			  dcc.Dropdown(
 						   id=id_name,
 						   #options=[{'label': i, 'value': i} for i in hotels],
 						   value='One Bedroom Studio Garden Apartment'
 						   ),
-			  
 			  ], className='five columns',
 				 style={'display': 'inline-block'}
 			   )
@@ -310,9 +309,7 @@ def create_calendar(id_name):
 	if id_name.find("out")>0:
 		label = 'Checkout'
 	calendar = html.Div([
-						 
 			  html.Div(children=label, id=label),
-						 
 			  dcc.DatePickerSingle(
 								   id=id_name,
 								   min_date_allowed=datetime.datetime.today(),
@@ -320,7 +317,6 @@ def create_calendar(id_name):
 								   initial_visible_month=datetime.datetime.today(),
 								   date=str(datetime.datetime.today().date())
 								   ),
-						 
 						 ], className='four columns',
 						#style={'display': 'inline-block'}
 						)
@@ -348,6 +344,37 @@ def creat_searchbar(id_name):
 	return searchbar
 
 
+def create_description(hotel_name):
+	df_airbnb_pick = df_airbnb[df_airbnb["name"] == hotel_name]
+	property_type = str(df_airbnb_pick['property_type'].iloc[0])
+	room_type = str(df_airbnb_pick['room_type'].iloc[0])
+	price = str(df_airbnb_pick['price'].iloc[0])
+	ac = str(df_airbnb_pick['accommodates'].iloc[0])
+	bedr = str(df_airbnb_pick['bedrooms'].iloc[0])
+	beds = str(df_airbnb_pick['beds'].iloc[0])
+	baths = str(df_airbnb_pick['bathrooms'].iloc[0])
+	txt = bedr+'/'+beds
+	url_listing = str(df_airbnb_pick['listing_url'].iloc[0])
+	
+	div = html.Div(
+				   children=[
+							 dcc.Markdown(f'''
+					   
+					   > **Room/Property Type** : *{room_type} in {property_type}* \n
+					   > **Guests** : *{ac}* \n
+					   > **price** : *{price}* \n
+					   > **URL** : *{url_listing}*
+					   '''),
+							 ],
+				   # > **Name** : *{hotel_name}* \n
+				   # > **Bedrooms/Beds** : *{txt}* \n
+				   # > **Bathrooms** : *{baths}* \n
+				   className='four columns',
+				   style={'marginLeft': 30, 'marginTop': 20}
+				   )
+	return div
+
+
 
 
 
@@ -369,7 +396,6 @@ app = dash.Dash(name=app_name, server=server, external_stylesheets=external_styl
 #config.assets.compress = True
 #server = app.server
 
-
 app.layout = html.Div(
 					  children=[
 								
@@ -389,10 +415,8 @@ app.layout = html.Div(
 							html.Div([
 									  html.Div(create_content('my-graph')),
 									  
+									  html.Div( id='pred_result', children= []),
 									  
-									  html.Div( id='pred_result', children= [
-												
-												]),
 									  # style={'vertical-align': 'middle'}
 									  
 								], className='row')
@@ -405,7 +429,7 @@ app.layout = html.Div(
 
 
 
-## update text
+
 @app.callback(
 			  Output('pred_result', 'children'),
 			  [# list of dash.dependencies Input
@@ -432,11 +456,13 @@ def update_prediction(hotel_name, in_datepick):
 		val_predict2 = 'High chance to have CRIME !'
 	
 	a = html.Div([
-				  html.Label(' \n', className='three columns'),
+				  #html.Label('test \n', className='three columns'),
 				  html.Div( id= 'line-space2', style={'padding': 12}),
 				  dcc.Input(id= 'pred1', value= '[12AM -8AM]  ' + val_predict, type='text', className='four columns'),
 				  dcc.Input(id= 'pred2', value= '[ 8AM -4PM]  ' + val_predict1, type='text', className='four columns'),
 				  dcc.Input(id= 'pred3', value= '[ 4PM-12AM]  '  + val_predict2, type='text', className='four columns'),
+				  
+				  create_description(hotel_name)
 				  ])
 	return a
 
