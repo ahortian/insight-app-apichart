@@ -6,19 +6,17 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+from textwrap import dedent
 
-#import us
-#import plotly
 import plotly.graph_objs as go
 import pickle
 from joblib import load
-#import folium
-#from app import app
-from sklearn import ensemble
 
-#from datetime import datetime as dt
-#import matplotlib.pyplot as plt
-#import seaborn as sns
+import urllib
+import json
+import flask
+
+from sklearn import ensemble
 import numpy as np
 import pandas as pd
 import datetime
@@ -27,10 +25,13 @@ import time
 import math
 import random
 
-import urllib
-import json
-
-import flask
+#from datetime import datetime as dt
+#import matplotlib.pyplot as plt
+#import seaborn as sns
+#import us
+#import plotly
+#import folium
+#from app import app
 
 
 do_debug = "apicharthortiangtham" in os.getcwd()
@@ -41,56 +42,16 @@ mapbox_access_token = "pk.eyJ1IjoiYWhvcnRpYW4iLCJhIjoiY2p4MDZ5OG9hMW5wNzQ4bXpubT
 #loaded_model = load('grad_bdt_classi_police_mbta_2019_06_28_F1p559_pipe.joblib')
 loaded_model = load('grad_bdt_classi_undersampling_2019_06_28_F1p583_pipe.joblib')
 
-
-
 # dataset needed
-#df_crime_valid = pd.read_csv("fullTrainTestCrimeData_validate_v1_weather_by_day.csv")
 df_airbnb = pd.read_csv("listings.csv")
 df_policeStat = pd.read_csv("Boston_Police_Stations.csv")
 df_mbta = pd.read_csv("MBTA_Rapid_Transit_Stops.csv")
 
-
 hotels = df_airbnb["name"][:20]
-#address = df_airbnb["name"][:20]
-districts = {"Downtown", "Charlestown", "East Boston", "Roxbury",
-	"Mattapan", "South Boston", "Dorchester", "South End",
-		"Brighton", "West Roxbury", "Jamaica Plain", "Hyde Park"}
-
-#neighbourhoods = ['Downtown Crossing', 'Downtown', 'Chinatown', 'East Boston', 'Roxbury',
-#				 'Mattapan', 'South Boston', 'Dorchester', 'South End', 'West Roxbury'
-#				 , 'Jamaica Plain', 'Hyde Park']
 
 neighbourhoods = ['Downtown', 'Chinatown', 'East Boston', 'Roxbury',
 				  'Mattapan', 'South Boston', 'Dorchester', 'West Roxbury'
 				  , 'Jamaica Plain', 'Hyde Park','Brighton','Charlestown']
-# 'South End' not working why?
-
-
-#neighbourhoods_notsure = ['Roslindale',  'Mission Hill', 'Fenway/Kenmore',
-#				 'Back Bay', 'Leather District',   'North End',
-#				 'Charlestown', 'West End', 'Beacon Hill', 'Theater District',
-#				  'Financial District', 'Government Center',
-#				 'Allston-Brighton' , 'Chestnut Hill',
-#				 'Brookline', 'Cambridge' ,'Somerville' ,'Harvard Square']
-
-#'Downtown'
-#'Chinatown'
-#'East Boston'
-#'Roxbury'
-#'Mattapan'
-#'South Boston'
-#'Dorchester'
-#'South End'
-#'West Roxbury'
-#'Jamaica Plain'
-#'Hyde Park'
-
-#new_list_neighbour = [, , 'Roslindale', , 'Back Bay',
-# 'North End', , , ,
-# , 'Fenway', 'Mission Hill', 'Beacon Hill', 'Allston',
-#  , , 'Bay Village',
-# 'South Boston Waterfront', 'West End', , ,
-# , 'Leather District', 'Longwood Medical Area']
 
 theme = {
 	'font-family': 'Raleway',
@@ -184,10 +145,9 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 	dist_closest_police = get_shortest_dist_police(lat, long, df_policeStat)
 	dist_closest_mbta = get_shortest_dist_police(lat, long, df_mbta)
 
-
 	# real weather data  from API
 	w_data = get_weather_info(select_date)
-	#print (w_data)
+	print (w_data)
 	
 	# const weather data for testing
 	#w_data = [{'hr_grp': 1, 'temp': 68.78375000000001, 'humid': 79.875, 'wndsp': 5.2212499999999995, 'pcip': 0.009625}, {'hr_grp': 2, 'temp': 75.4225, 'humid': 66.125, 'wndsp': 7.51875, 'pcip': 0.00825}, {'hr_grp': 3, 'temp': 75.185, 'humid': 66.375, 'wndsp': 6.9087499999999995, 'pcip': 0.00875}]
@@ -196,20 +156,6 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 	a = []
 	for i in [0,1,2]:
 		data = {
-			# ["DAY_OF_MONTH","DAY_OF_WEEK_NUM","MONTH","YEAR","Lat","Long"
-			#,"Temperature(F)","Humidity(%)","Wind Speed(mph)","Precip.(in)"]
-#		'Hour_Grp':[i+1],
-#		'DAY_OF_MONTH':[day.day],
-#		'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
-#		'MONTH':[day.month],
-#		'YEAR':[day.year],
-#		'Lat':[lat],
-#		'Long':[long],
-#		'Temperature(F)':[w_data[i]['temp']],
-#		'Humidity(%)':[w_data[i]['humid']],
-#		'Wind Speed(mph)':[w_data[i]['wndsp']],
-#		'Precip.(in)':[w_data[i]['pcip']]
-			
 		'Hour_Grp':[i+1],
 		'DAY_OF_MONTH':[day.day],
 		'DAY_OF_WEEK_NUM':[day.weekday()+1], # python start with Mon = 0, Sun = 6
@@ -222,12 +168,7 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 		'Precip.(in)':[w_data[i]['pcip']],
 		'closest_police_d': [dist_closest_police],
 		'closest_mbta_d': [dist_closest_mbta],
-		
-				#	'Temperature(F)':[df_crime_pick['Temperature(F)'].iloc[0]],
-				#	'Humidity(%)':[df_crime_pick['Humidity(%)'].iloc[0]],
-				#	'Wind Speed(mph)':[df_crime_pick['Wind Speed(mph)'].iloc[0]],
-				#	'Precip.(in)':[df_crime_pick['Precip.(in)'].iloc[0]]
-			}
+		}
 		# Create DataFrame
 		x_valid = pd.DataFrame(data)
 		#print (x_valid)
@@ -237,27 +178,6 @@ def is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, select_name=
 		##a = random.uniform(0, 1)
 		a += [predictions[0]]
 	return a, lat, long
-
-
-#	boston_map_crime = folium.Map(location=[42.321145, -71.057083],
-#								  zoom_start=11
-#		     ,tiles="CartoDB dark_matter"
-#								  )
-#	radius = 5
-#	if (a>0.5):
-#		color = "#FF4500"
-#	else:
-#		color = "#7cfc00"
-#	#color = "#FF4500"
-#	popup_text = """Latitude : {}<br>
-#		Longitude : {}<br>
-#		Name : {}<br>"""
-#	popup_text = popup_text.format(lat,
-#								   long,
-#								   str(str(df_airbnb_pick["name"].iloc[0]))
-#								   )
-#	folium.CircleMarker(location = [lat, long], popup= popup_text,radius = radius, color = color, fill = True).add_to(boston_map_crime)
-#	boston_map_crime.save('plot_data_BOS_update.html')
 
 ###----------------------------------------------------###
 ###----------------------------------------------------###
@@ -313,7 +233,7 @@ def create_calendar(id_name):
 			  dcc.DatePickerSingle(
 								   id=id_name,
 								   min_date_allowed=datetime.datetime.today(),
-								   max_date_allowed=datetime.datetime(2019, 12, 31),
+								   max_date_allowed=datetime.datetime(2020, 12, 31),
 								   initial_visible_month=datetime.datetime.today(),
 								   date=str(datetime.datetime.today().date())
 								   ),
@@ -355,16 +275,17 @@ def create_description(hotel_name):
 	baths = str(df_airbnb_pick['bathrooms'].iloc[0])
 	txt = bedr+'/'+beds
 	url_listing = str(df_airbnb_pick['listing_url'].iloc[0])
+	url_link = html.A(url_listing, href=url_listing, target="_blank")
 	
 	div = html.Div(
 				   children=[
-							 dcc.Markdown(f'''
-					   
-					   > **Room/Property Type** : *{room_type} in {property_type}* \n
-					   > **Guests** : *{ac}* \n
-					   > **price** : *{price}* \n
-					   > **URL** : *{url_listing}*
-					   '''),
+							 dcc.Markdown(dedent(
+						f'''
+						> **Room/Property Type** : *{room_type} in {property_type}* \n
+						> **Guests** : *{ac}* \n
+						> **price** : *{price}* \n
+						> **URL** : {url_listing}
+						'''))
 							 ],
 				   # > **Name** : *{hotel_name}* \n
 				   # > **Bedrooms/Beds** : *{txt}* \n
@@ -375,8 +296,8 @@ def create_description(hotel_name):
 	return div
 
 
-
-
+###----------------------------------------------------###
+###----------------------------------------------------###
 
 ## main app code
 app_name = 'Dash StaySafe'
@@ -518,10 +439,8 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 		return {"data":trace, "layout":go.Layout()}
 
 	a, lat_pick, long_pick = is_crime_occur(df_airbnb, loaded_model, df_policeStat, df_mbta, hotel_name, datepick)
-	#display_txt =  "[12AM- 8AM  is " + str(a[0]) + "]\n"
-	#display_txt += "[8AM - 4PM  is " + str(a[1]) + "]\n"
-	#display_txt += "[4PM - 12AM is " + str(a[2]) + "]\n"
-	display_txt = hotel_name #+ '\n' + display_txt
+	
+	display_txt = hotel_name 
 	if a[0] > 0.5 or a[1] > 0.5 or a[2] > 0.5:
 		plot_col = "rgb(255, 0, 0)"
 		plot_col_opac = "rgb(242, 177, 172)"
@@ -568,19 +487,6 @@ def update_map(hotel_name, datepick): # the first parameter is the first dash.de
 
 	dict_return = {"data":trace, "layout":layout}
 	return dict_return
-
-
-#@app.callback(
-#			  Output('result_filter', 'children'),
-#			  [
-#			   Input('hotel-text-filter', 'value')
-#			   ]
-#			  )
-#def filter_hotel_by_name(filter_text):
-##return bigfoot_by_year(filter_sightings(filter_text))
-#	return 'Your filter is "{}"'.format(filter_text)
-
-
 
 
 
